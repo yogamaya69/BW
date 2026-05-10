@@ -1,0 +1,400 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  LayoutDashboard, 
+  ClipboardCheck, 
+  PlayCircle, 
+  CheckCircle2, 
+  Trophy,
+  TrendingUp,
+  Target,
+  BarChart3
+} from 'lucide-react';
+
+// --- DADOS DE TESTE ---
+const initialQueue = [
+  { id: 1, name: 'Ana Costa', time: '09:15', status: 'waiting' },
+  { id: 2, name: 'João (Você)', time: '09:20', status: 'waiting', isMe: true },
+  { id: 3, name: 'Carlos Mendes', time: '09:35', status: 'waiting' },
+  { id: 4, name: 'Sofia Almeida', time: '09:42', status: 'waiting' },
+];
+
+const dashboardData = {
+  points: 1250,
+  attendances: 84,
+  conversionBudget: 65,
+  conversionSales: 22,
+  followUp: {
+    inProgress: 15,
+    closedCompetitor: 8,
+    noFollowUp: 5,
+    canceled: 3,
+    closedBrentwood: 18
+  },
+  approachLevel: {
+    superficial: 12,
+    adequate: 28,
+    consultative: 34,
+    differentiated: 10
+  }
+};
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('queue');
+  const [queue, setQueue] = useState(initialQueue);
+  const [showAssessment, setShowAssessment] = useState(false);
+  const [assessmentStep, setAssessmentStep] = useState(1);
+
+  // Manipuladores
+  const handleStartAttendance = () => {
+    // Remove o usuário da fila e inicia o atendimento (simulado com a autoavaliação)
+    setQueue(queue.filter(q => !q.isMe));
+    setShowAssessment(true);
+  };
+
+  const handleFinishAssessment = () => {
+    setShowAssessment(false);
+    setAssessmentStep(1);
+    setActiveTab('dashboard'); // Redireciona para ver o desempenho após avaliar
+  };
+
+  return (
+    <div className="flex h-screen bg-slate-950 text-slate-200 font-sans">
+      {/* Navegação Lateral */}
+      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
+        <div className="p-6">
+          <h1 className="text-xl font-bold text-white tracking-widest uppercase">
+            Brentwood
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">Jornada do Cliente</p>
+        </div>
+        
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          <button 
+            onClick={() => setActiveTab('queue')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'queue' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <Users size={20} />
+            <span className="font-medium">Fila Eletrônica</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('dashboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'dashboard' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+          >
+            <LayoutDashboard size={20} />
+            <span className="font-medium">Desempenho</span>
+          </button>
+        </nav>
+
+        <div className="p-4 border-t border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold">
+              JS
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">João Santos</p>
+              <p className="text-xs text-indigo-400 flex items-center gap-1">
+                <Trophy size={12} /> {dashboardData.points} pts
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Área de Conteúdo Principal */}
+      <main className="flex-1 overflow-y-auto p-8 relative">
+        {activeTab === 'queue' && (
+          <QueueView 
+            queue={queue} 
+            onStartAttendance={handleStartAttendance} 
+          />
+        )}
+        
+        {activeTab === 'dashboard' && (
+          <DashboardView data={dashboardData} />
+        )}
+
+        {/* Modal de Autoavaliação (Sobreposto) */}
+        {showAssessment && (
+          <AssessmentModal 
+            step={assessmentStep} 
+            setStep={setAssessmentStep} 
+            onFinish={handleFinishAssessment} 
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// --- COMPONENTES DE VISUALIZAÇÃO ---
+
+function QueueView({ queue, onStartAttendance }) {
+  const myPosition = queue.findIndex(q => q.isMe) + 1;
+  const isMyTurn = myPosition === 1 || myPosition === 2; // Pode atender se for o 1º ou 2º
+
+  return (
+    <div className="max-w-4xl mx-auto animation-fade-in">
+      <header className="mb-8">
+        <h2 className="text-3xl font-bold text-white">Fila de Atendimento</h2>
+        <p className="text-slate-400 mt-2">Acompanhe sua vez no salão de vendas.</p>
+      </header>
+
+      {/* Destaque do usuário atual */}
+      {myPosition > 0 ? (
+        <div className="bg-gradient-to-r from-indigo-900 to-slate-800 border border-indigo-500/30 rounded-2xl p-6 mb-8 flex items-center justify-between shadow-lg shadow-indigo-900/20">
+          <div>
+            <p className="text-indigo-200 font-medium">Sua posição atual</p>
+            <div className="flex items-end gap-3 mt-1">
+              <span className="text-5xl font-black text-white flex items-center gap-2">
+                {myPosition === 1 && <Trophy className="text-yellow-400" size={40} />}
+                {myPosition === 2 && <Trophy className="text-slate-300" size={40} />}
+                {myPosition === 3 && <Trophy className="text-amber-500" size={40} />}
+                {myPosition}º
+              </span>
+              <span className="text-slate-400 mb-1">na fila de espera</span>
+            </div>
+          </div>
+          <button 
+            onClick={onStartAttendance}
+            disabled={!isMyTurn}
+            className={`px-8 py-4 rounded-xl font-bold flex items-center gap-2 transition-all ${
+              isMyTurn 
+                ? 'bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/30 hover:-translate-y-1' 
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            }`}
+          >
+            <PlayCircle size={24} />
+            Registrar Atendimento
+          </button>
+        </div>
+      ) : (
+        <div className="bg-slate-800 rounded-2xl p-6 mb-8 border border-slate-700 flex justify-between items-center">
+          <p className="text-slate-400">Você não está na fila neste momento.</p>
+          <button className="px-6 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg font-medium transition-colors">
+            Entrar na Fila
+          </button>
+        </div>
+      )}
+
+      {/* Lista da Fila */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="grid grid-cols-12 gap-4 p-4 border-b border-slate-800 text-sm font-semibold text-slate-400">
+          <div className="col-span-2 text-center">Posição</div>
+          <div className="col-span-6">Consultor</div>
+          <div className="col-span-4 text-right pr-4">Entrada</div>
+        </div>
+        
+        <div className="divide-y divide-slate-800/50">
+          {queue.map((person, index) => (
+            <div key={person.id} className={`grid grid-cols-12 gap-4 p-4 items-center transition-colors hover:bg-slate-800/50 ${person.isMe ? 'bg-indigo-950/20' : ''}`}>
+              <div className="col-span-2 flex justify-center">
+                {/* Troféus para 1º, 2º e 3º lugar */}
+                {index === 0 && (
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-400" title="1º Lugar (Ouro)">
+                    <Trophy size={18} />
+                  </span>
+                )}
+                {index === 1 && (
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-300/20 text-slate-300" title="2º Lugar (Prata)">
+                    <Trophy size={18} />
+                  </span>
+                )}
+                {index === 2 && (
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center bg-amber-600/20 text-amber-500" title="3º Lugar (Bronze)">
+                    <Trophy size={18} />
+                  </span>
+                )}
+                {index > 2 && (
+                  <span className="w-8 h-8 rounded-full flex items-center justify-center font-bold bg-slate-800 text-slate-300">
+                    {index + 1}
+                  </span>
+                )}
+              </div>
+              <div className="col-span-6 flex items-center gap-3">
+                <div className={`w-2 h-2 rounded-full ${person.isMe ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]' : 'bg-slate-600'}`}></div>
+                <span className={`font-medium ${person.isMe ? 'text-indigo-300' : 'text-slate-200'}`}>
+                  {person.name}
+                </span>
+              </div>
+              <div className="col-span-4 text-right pr-4 text-slate-400 font-mono text-sm">
+                {person.time}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardView({ data }) {
+  return (
+    <div className="max-w-5xl mx-auto animation-fade-in pb-10">
+      <header className="mb-8 flex justify-between items-end">
+        <div>
+          <h2 className="text-3xl font-bold text-white">Análise de Desempenho</h2>
+          <p className="text-slate-400 mt-2">Visão geral do mês atual (últimos 30 dias).</p>
+        </div>
+        <div className="bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-sm font-medium text-emerald-400">Dados em tempo real</span>
+        </div>
+      </header>
+
+      {/* Principais KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <KpiCard icon={<Trophy className="text-amber-400" />} title="Pontos" value={`${data.points} pts`} trend="+12%" />
+        <KpiCard icon={<Users className="text-blue-400" />} title="Atendimentos" value={data.attendances} trend="+5%" />
+        <KpiCard icon={<Target className="text-indigo-400" />} title="Conv. Orçamentos" value={`${data.conversionBudget}%`} trend="-2%" neutral />
+        <KpiCard icon={<TrendingUp className="text-emerald-400" />} title="Conv. Vendas" value={`${data.conversionSales}%`} trend="+4%" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Gráfico Nível de Abordagem */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <BarChart3 size={20} className="text-indigo-400" />
+            Nível de Abordagem
+          </h3>
+          <div className="space-y-4">
+            <ProgressBar label="Diferenciado Brentwood" value={data.approachLevel.differentiated} total={84} color="bg-indigo-500" />
+            <ProgressBar label="Consultivo" value={data.approachLevel.consultative} total={84} color="bg-emerald-500" />
+            <ProgressBar label="Adequado" value={data.approachLevel.adequate} total={84} color="bg-amber-500" />
+            <ProgressBar label="Superficial" value={data.approachLevel.superficial} total={84} color="bg-rose-500" />
+          </div>
+        </div>
+
+        {/* Status de Follow-up */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <ClipboardCheck size={20} className="text-indigo-400" />
+            Status de Follow-up
+          </h3>
+          <div className="space-y-3">
+            <FollowUpRow label="Em Follow-up" count={data.followUp.inProgress} color="text-amber-400" />
+            <FollowUpRow label="Encerrado Brentwood" count={data.followUp.closedBrentwood} color="text-emerald-400" />
+            <FollowUpRow label="Encerrado Concorrência" count={data.followUp.closedCompetitor} color="text-rose-400" />
+            <FollowUpRow label="Desistiu da Compra" count={data.followUp.canceled} color="text-slate-400" />
+            <FollowUpRow label="Não realizou Follow" count={data.followUp.noFollowUp} color="text-rose-600" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- COMPONENTES AUXILIARES ---
+
+function KpiCard({ icon, title, value, trend, neutral }) {
+  const isPositive = trend.startsWith('+');
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between h-32 hover:border-slate-700 transition-colors">
+      <div className="flex justify-between items-start">
+        <span className="p-2 bg-slate-800 rounded-lg">{icon}</span>
+        <span className={`text-xs font-bold px-2 py-1 rounded-md ${neutral ? 'bg-slate-800 text-slate-400' : (isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')}`}>
+          {trend}
+        </span>
+      </div>
+      <div>
+        <p className="text-slate-400 text-sm font-medium">{title}</p>
+        <p className="text-2xl font-black text-white mt-1">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ProgressBar({ label, value, total, color }) {
+  const percentage = Math.round((value / total) * 100);
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-slate-300 font-medium">{label}</span>
+        <span className="text-slate-400">{value} <span className="text-slate-600">({percentage}%)</span></span>
+      </div>
+      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+        <div className={`h-2.5 rounded-full ${color}`} style={{ width: `${percentage}%` }}></div>
+      </div>
+    </div>
+  );
+}
+
+function FollowUpRow({ label, count, color }) {
+  return (
+    <div className="flex justify-between items-center p-3 rounded-lg bg-slate-800/50 border border-slate-800/80">
+      <span className="text-slate-300 font-medium">{label}</span>
+      <span className={`font-bold ${color}`}>{count}</span>
+    </div>
+  );
+}
+
+function AssessmentModal({ step, setStep, onFinish }) {
+  return (
+    <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl shadow-indigo-900/20 animation-scale-in">
+        <div className="p-6 border-b border-slate-800">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold text-white">Autoavaliação do Atendimento</h3>
+            <span className="text-sm font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full">
+              Passo {step} de 3
+            </span>
+          </div>
+          {/* Barra de progresso */}
+          <div className="w-full bg-slate-800 rounded-full h-1.5">
+            <div className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${(step / 3) * 100}%` }}></div>
+          </div>
+        </div>
+
+        <div className="p-8">
+          {step === 1 && (
+            <div className="space-y-6">
+              <p className="text-lg text-slate-200">1. Identificou o problema/necessidade real do cliente de forma clara?</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setStep(2)} className="py-4 rounded-xl border border-slate-700 hover:border-emerald-500 hover:bg-emerald-500/10 text-slate-300 font-medium transition-all group">
+                  <CheckCircle2 className="mx-auto mb-2 text-slate-500 group-hover:text-emerald-500 transition-colors" size={28} />
+                  Sim (+10 pts)
+                </button>
+                <button onClick={() => setStep(2)} className="py-4 rounded-xl border border-slate-700 hover:border-rose-500 hover:bg-rose-500/10 text-slate-300 font-medium transition-all">
+                  Não
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6">
+              <p className="text-lg text-slate-200">2. Apresentou diferenciais exclusivos Brentwood (design, garantia, acabamentos)?</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setStep(3)} className="py-4 rounded-xl border border-slate-700 hover:border-emerald-500 hover:bg-emerald-500/10 text-slate-300 font-medium transition-all group">
+                  <CheckCircle2 className="mx-auto mb-2 text-slate-500 group-hover:text-emerald-500 transition-colors" size={28} />
+                  Sim (+15 pts)
+                </button>
+                <button onClick={() => setStep(3)} className="py-4 rounded-xl border border-slate-700 hover:border-rose-500 hover:bg-rose-500/10 text-slate-300 font-medium transition-all">
+                  Não
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="text-center space-y-6">
+              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trophy size={40} className="text-emerald-400" />
+              </div>
+              <h4 className="text-2xl font-bold text-white">Abordagem Consultiva!</h4>
+              <p className="text-slate-400">Excelente trabalho. Você ganhou <span className="text-emerald-400 font-bold">+25 pontos</span> neste atendimento.</p>
+              
+              <button 
+                onClick={onFinish}
+                className="w-full mt-6 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-colors"
+              >
+                Concluir e ver Desempenho
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
